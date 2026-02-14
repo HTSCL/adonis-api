@@ -1,1 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adonis Control Panel</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- ============================================ -->
+    <!-- ÉCRAN DE CONNEXION -->
+    <!-- ============================================ -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-gamepad"></i>
+                <h1>Adonis Control Panel</h1>
+                <p>Contrôlez votre serveur Roblox à distance</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="apiKey">
+                        <i class="fas fa-key"></i> Clé API
+                    </label>
+                    <input type="password" id="apiKey" placeholder="Entrez votre clé API" autocomplete="off">
+                </div>
+                <button onclick="login()" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+                <div id="loginError" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
 
+    <!-- ============================================ -->
+    <!-- PANEL PRINCIPAL -->
+    <!-- ============================================ -->
+    <div id="mainPanel" class="screen">
+        <!-- Barre de navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-gamepad"></i>
+                <span>Adonis Panel</span>
+            </div>
+            <div class="nav-info">
+                <span class="server-status">
+                    <i class="fas fa-circle"></i>
+                    <span id="serverCount">0 serveurs</span>
+                </span>
+                <button onclick="logout()" class="btn btn-small">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- ============================================ -->
+            <!-- CARTES DE STATISTIQUES -->
+            <!-- ============================================ -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statsServers">0</h3>
+                        <p>Serveurs actifs</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statsCommands">0</h3>
+                        <p>Commandes exécutées</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statsPending">0</h3>
+                        <p>En attente</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="statsLogs">0</h3>
+                        <p>Logs</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- ACTIONS RAPIDES -->
+            <!-- ============================================ -->
+            <div class="section">
+                <h2><i class="fas fa-bolt"></i> Actions Rapides</h2>
+                <div class="quick-actions">
+                    <button onclick="showCommandModal('sm')" class="action-btn">
+                        <i class="fas fa-bullhorn"></i>
+                        Annonce
+                    </button>
+                    <button onclick="showCommandModal('hint')" class="action-btn">
+                        <i class="fas fa-comment"></i>
+                        Message
+                    </button>
+                    <button onclick="showCommandModal('shutdown')" class="action-btn danger">
+                        <i class="fas fa-power-off"></i>
+                        Shutdown
+                    </button>
+                    <button onclick="showCommandModal('music')" class="action-btn">
+                        <i class="fas fa-music"></i>
+                        Musique
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- COMMANDES JOUEUR -->
+            <!-- ============================================ -->
+            <div class="section">
+                <h2><i class="fas fa-users"></i> Commandes Joueur</h2>
+                <div class="command-panel">
+                    <div class="input-group">
+                        <input type="text" id="targetPlayer" placeholder="Nom du joueur (ex: lucasssss_2)">
+                        <select id="commandSelect">
+                            <option value="">-- Choisir une commande --</option>
+                            <optgroup label="🛡️ Protection">
+                                <option value="ff">Force Field</option>
+                                <option value="unff">Retirer Force Field</option>
+                                <option value="god">Mode Dieu</option>
+                                <option value="ungod">Retirer Mode Dieu</option>
+                            </optgroup>
+                            <optgroup label="⚔️ Actions">
+                                <option value="kill">Tuer</option>
+                                <option value="respawn">Respawn</option>
+                                <option value="explode">Faire exploser</option>
+                                <option value="refresh">Refresh</option>
+                            </optgroup>
+                            <optgroup label="✨ Effets">
+                                <option value="fire">Feu</option>
+                                <option value="unfire">Retirer Feu</option>
+                                <option value="sparkles">Paillettes</option>
+                                <option value="unsparkles">Retirer Paillettes</option>
+                                <option value="smoke">Fumée</option>
+                                <option value="unsmoke">Retirer Fumée</option>
+                            </optgroup>
+                            <optgroup label="📍 Téléportation">
+                                <option value="tp">Téléporter vers</option>
+                                <option value="bring">Amener à moi</option>
+                            </optgroup>
+                            <optgroup label="⚖️ Modération">
+                                <option value="kick">Kick</option>
+                                <option value="ban">Ban</option>
+                                <option value="unban">Unban</option>
+                                <option value="mute">Mute</option>
+                                <option value="unmute">Unmute</option>
+                            </optgroup>
+                            <optgroup label="👑 Administration">
+                                <option value="admin">Donner Admin</option>
+                                <option value="unadmin">Retirer Admin</option>
+                                <option value="mod">Donner Mod</option>
+                                <option value="unmod">Retirer Mod</option>
+                            </optgroup>
+                        </select>
+                        <input type="text" id="commandArgs" placeholder="Arguments (optionnel)">
+                        <button onclick="executePlayerCommand()" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Exécuter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- COMMANDE PERSONNALISÉE -->
+            <!-- ============================================ -->
+            <div class="section">
+                <h2><i class="fas fa-code"></i> Commande Personnalisée</h2>
+                <div class="command-panel">
+                    <div class="input-group">
+                        <input type="text" id="customCommand" placeholder="Exemple: ff lucasssss_2 ou kill PlayerName">
+                        <button onclick="executeCustomCommand()" class="btn btn-success">
+                            <i class="fas fa-terminal"></i> Exécuter
+                        </button>
+                    </div>
+                    <p style="margin-top: 10px; color: #6b7280; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> 
+                        Vous pouvez écrire la commande avec ou sans préfixe (:, ;)
+                    </p>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- HISTORIQUE DES COMMANDES -->
+            <!-- ============================================ -->
+            <div class="section">
+                <h2><i class="fas fa-history"></i> Historique des Commandes</h2>
+                <div class="table-container">
+                    <table id="commandHistory">
+                        <thead>
+                            <tr>
+                                <th>Heure</th>
+                                <th>Commande</th>
+                                <th>Cible</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr>
+                                <td colspan="4" class="no-data">Aucune commande exécutée</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- LOGS DU SERVEUR -->
+            <!-- ============================================ -->
+            <div class="section">
+                <h2><i class="fas fa-file-alt"></i> Logs du Serveur</h2>
+                <div class="logs-container" id="logsContainer">
+                    <div class="no-data">Chargement des logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MODAL POUR ACTIONS RAPIDES -->
+    <!-- ============================================ -->
+    <div id="commandModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Commande</h3>
+                <button onclick="closeModal()" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Groupe pour les messages (Annonce/Hint) -->
+                <div class="form-group" id="messageGroup" style="display: none;">
+                    <label>Message</label>
+                    <textarea id="modalMessage" rows="3" placeholder="Entrez votre message..."></textarea>
+                </div>
+                
+                <!-- Groupe pour la musique -->
+                <div class="form-group" id="musicGroup" style="display: none;">
+                    <label>ID Audio Roblox</label>
+                    <input type="number" id="modalMusicId" placeholder="Ex: 1234567890">
+                </div>
+                
+                <!-- Groupe pour shutdown -->
+                <div class="form-group" id="shutdownGroup" style="display: none;">
+                    <label style="color: var(--danger); font-weight: bold;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Êtes-vous sûr de vouloir éteindre le serveur ?
+                    </label>
+                    <p style="color: #6b7280; margin-top: 10px;">
+                        Cette action fermera le serveur Roblox immédiatement.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" class="btn btn-secondary">Annuler</button>
+                <button onclick="executeModalCommand()" class="btn btn-primary">Exécuter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- CONTENEUR DE NOTIFICATIONS -->
+    <!-- ============================================ -->
+    <div id="notificationContainer"></div>
+
+    <!-- Script JavaScript -->
+    <script src="/js/app.js"></script>
+</body>
+</html>
