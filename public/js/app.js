@@ -2,51 +2,64 @@
 /* CONFIGURATION */
 /* ============================================ */
 
-// URL de l'API (automatiquement l'URL actuelle)
 const API_URL = window.location.origin;
-
-// Clé API (sauvegardée localement)
 let API_KEY = '';
-
-// Intervalle de mise à jour
 let updateInterval;
+
+console.log('🔧 Panel chargé - API URL:', API_URL);
 
 /* ============================================ */
 /* AUTHENTIFICATION */
 /* ============================================ */
 
-// Fonction de connexion
 function login() {
-    const apiKey = document.getElementById('apiKey').value;
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const loginBtn = document.getElementById('loginBtn');
     
-    // Validation
     if (!apiKey) {
         showError('Veuillez entrer une clé API');
         return;
     }
     
-    API_KEY = apiKey;
-    localStorage.setItem('adonis_api_key', apiKey);
+    console.log('🔑 Tentative de connexion avec clé:', apiKey.substring(0, 10) + '...');
     
-    // Test de la connexion à l'API
-    fetch(`${API_URL}/`, {
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+    
+    API_KEY = apiKey;
+    
+    // Test avec /stats plutôt que /
+    fetch(`${API_URL}/stats`, {
+        method: 'GET',
         headers: {
-            'X-API-Key': API_KEY
+            'X-API-Key': API_KEY,
+            'Content-Type': 'application/json'
         }
     })
     .then(response => {
+        console.log('📡 Réponse reçue:', response.status);
         if (response.ok) {
-            showMainPanel();
+            return response.json();
         } else {
-            showError('Clé API invalide');
+            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
         }
     })
+    .then(data => {
+        console.log('✅ Connexion réussie:', data);
+        localStorage.setItem('adonis_api_key', apiKey);
+        showMainPanel();
+    })
     .catch(error => {
-        showError('Erreur de connexion: ' + error.message);
+        console.error('❌ Erreur de connexion:', error);
+        showError('Erreur: ' + error.message);
+        API_KEY = '';
+    })
+    .finally(() => {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Se connecter';
     });
 }
 
-// Fonction de déconnexion
 function logout() {
     localStorage.removeItem('adonis_api_key');
     API_KEY = '';
@@ -54,30 +67,25 @@ function logout() {
     showLoginScreen();
 }
 
-// Afficher l'écran de connexion
 function showLoginScreen() {
     document.getElementById('loginScreen').classList.add('active');
     document.getElementById('mainPanel').classList.remove('active');
 }
 
-// Afficher le panel principal
 function showMainPanel() {
     document.getElementById('loginScreen').classList.remove('active');
     document.getElementById('mainPanel').classList.add('active');
     
-    // Charger les données
     loadStats();
     loadLogs();
     loadHistory();
     
-    // Mise à jour automatique toutes les 5 secondes
     updateInterval = setInterval(() => {
         loadStats();
         loadLogs();
     }, 5000);
 }
 
-// Afficher un message d'erreur sur la page de login
 function showError(message) {
     const errorDiv = document.getElementById('loginError');
     errorDiv.textContent = message;
@@ -92,19 +100,15 @@ function showError(message) {
 /* CHARGEMENT DES DONNÉES */
 /* ============================================ */
 
-// Charger les statistiques
 async function loadStats() {
     try {
         const response = await fetch(`${API_URL}/stats`, {
-            headers: {
-                'X-API-Key': API_KEY
-            }
+            headers: { 'X-API-Key': API_KEY }
         });
         
         const data = await response.json();
         
         if (data.success) {
-            // Mise à jour des statistiques
             document.getElementById('statsServers').textContent = data.stats.servers.active;
             document.getElementById('statsCommands').textContent = data.stats.commands.successfulCommands;
             document.getElementById('statsPending').textContent = data.stats.commands.totalPending;
@@ -116,13 +120,10 @@ async function loadStats() {
     }
 }
 
-// Charger les logs
 async function loadLogs() {
     try {
         const response = await fetch(`${API_URL}/adonis/logs?limit=50`, {
-            headers: {
-                'X-API-Key': API_KEY
-            }
+            headers: { 'X-API-Key': API_KEY }
         });
         
         const data = await response.json();
@@ -156,13 +157,11 @@ async function loadLogs() {
 /* EXÉCUTION DES COMMANDES */
 /* ============================================ */
 
-// Exécuter une commande sur un joueur
 async function executePlayerCommand() {
     const target = document.getElementById('targetPlayer').value.trim();
     const command = document.getElementById('commandSelect').value;
     const args = document.getElementById('commandArgs').value.trim();
     
-    // Validation
     if (!target) {
         showNotification('Veuillez entrer un nom de joueur', 'error');
         return;
@@ -173,7 +172,6 @@ async function executePlayerCommand() {
         return;
     }
     
-    // Construire les données de la commande
     const commandData = {
         command: command,
         target: target,
@@ -184,7 +182,6 @@ async function executePlayerCommand() {
     await sendCommand(commandData);
 }
 
-// Exécuter une commande personnalisée
 async function executeCustomCommand() {
     const customCmd = document.getElementById('customCommand').value.trim();
     
@@ -193,10 +190,8 @@ async function executeCustomCommand() {
         return;
     }
     
-    // Parser la commande
-    // Exemples: "ff lucasssss_2" ou ":kill PlayerName" ou "ban Player raison"
     const parts = customCmd.split(' ');
-    const command = parts[0].replace(/^[:;]/, ''); // Enlever le préfixe si présent
+    const command = parts[0].replace(/^[:;]/, '');
     const target = parts[1] || null;
     const args = parts.slice(2);
     
@@ -210,9 +205,10 @@ async function executeCustomCommand() {
     await sendCommand(commandData);
 }
 
-// Envoyer une commande à l'API
 async function sendCommand(commandData) {
     try {
+        console.log('📤 Envoi commande:', commandData);
+        
         const response = await fetch(`${API_URL}/adonis/commands`, {
             method: 'POST',
             headers: {
@@ -228,13 +224,11 @@ async function sendCommand(commandData) {
             showNotification(`Commande "${commandData.command}" envoyée avec succès`, 'success');
             addToHistory(commandData);
             
-            // Réinitialiser les champs
             document.getElementById('targetPlayer').value = '';
             document.getElementById('commandArgs').value = '';
             document.getElementById('commandSelect').value = '';
             document.getElementById('customCommand').value = '';
             
-            // Recharger les stats
             loadStats();
         } else {
             showNotification('Erreur: ' + data.error, 'error');
@@ -245,27 +239,23 @@ async function sendCommand(commandData) {
 }
 
 /* ============================================ */
-/* MODAL POUR ACTIONS RAPIDES */
+/* MODAL */
 /* ============================================ */
 
 let currentModalCommand = '';
 
-// Afficher le modal pour une commande
 function showCommandModal(command) {
     currentModalCommand = command;
     const modal = document.getElementById('commandModal');
     const title = document.getElementById('modalTitle');
     
-    // Réinitialiser tous les groupes
     document.getElementById('messageGroup').style.display = 'none';
     document.getElementById('musicGroup').style.display = 'none';
     document.getElementById('shutdownGroup').style.display = 'none';
     
-    // Réinitialiser les valeurs
     document.getElementById('modalMessage').value = '';
     document.getElementById('modalMusicId').value = '';
     
-    // Afficher le bon groupe selon la commande
     switch(command) {
         case 'sm':
             title.textContent = '📢 Message Système';
@@ -288,12 +278,10 @@ function showCommandModal(command) {
     modal.classList.add('active');
 }
 
-// Fermer le modal
 function closeModal() {
     document.getElementById('commandModal').classList.remove('active');
 }
 
-// Exécuter la commande depuis le modal
 async function executeModalCommand() {
     let commandData = {
         command: currentModalCommand,
@@ -321,7 +309,6 @@ async function executeModalCommand() {
             break;
             
         case 'shutdown':
-            // Pas d'args nécessaires
             break;
     }
     
@@ -330,12 +317,11 @@ async function executeModalCommand() {
 }
 
 /* ============================================ */
-/* HISTORIQUE DES COMMANDES */
+/* HISTORIQUE */
 /* ============================================ */
 
 let commandHistory = [];
 
-// Ajouter une commande à l'historique
 function addToHistory(commandData) {
     const historyEntry = {
         time: new Date().toLocaleTimeString(),
@@ -346,7 +332,6 @@ function addToHistory(commandData) {
     
     commandHistory.unshift(historyEntry);
     
-    // Garder seulement les 20 dernières
     if (commandHistory.length > 20) {
         commandHistory = commandHistory.slice(0, 20);
     }
@@ -354,7 +339,6 @@ function addToHistory(commandData) {
     updateHistoryTable();
 }
 
-// Mettre à jour le tableau d'historique
 function updateHistoryTable() {
     const tbody = document.getElementById('historyBody');
     
@@ -377,7 +361,6 @@ function updateHistoryTable() {
     });
 }
 
-// Charger l'historique
 function loadHistory() {
     updateHistoryTable();
 }
@@ -386,7 +369,6 @@ function loadHistory() {
 /* NOTIFICATIONS */
 /* ============================================ */
 
-// Afficher une notification
 function showNotification(message, type = 'success') {
     const container = document.getElementById('notificationContainer');
     const notification = document.createElement('div');
@@ -401,7 +383,6 @@ function showNotification(message, type = 'success') {
     
     container.appendChild(notification);
     
-    // Supprimer après 5 secondes
     setTimeout(() => {
         notification.remove();
     }, 5000);
@@ -411,33 +392,31 @@ function showNotification(message, type = 'success') {
 /* INITIALISATION */
 /* ============================================ */
 
-// Auto-login si clé API sauvegardée
 window.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Panel initialisé');
+    
     const savedKey = localStorage.getItem('adonis_api_key');
     
     if (savedKey) {
+        console.log('🔑 Clé sauvegardée trouvée');
         document.getElementById('apiKey').value = savedKey;
         login();
     }
 });
 
-// Permettre de soumettre le formulaire avec Entrée
 document.addEventListener('DOMContentLoaded', () => {
-    // Login avec Entrée
     document.getElementById('apiKey')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             login();
         }
     });
     
-    // Commande personnalisée avec Entrée
     document.getElementById('customCommand')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             executeCustomCommand();
         }
     });
     
-    // Fermer le modal avec Échap
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
